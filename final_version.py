@@ -8,18 +8,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 app = Flask(__name__)
-app.secret_key = "hello"
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///default.db')
+app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')  # Секретный ключ
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///default.db')  # URI для базы данных
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.permanent_session_lifetime = timedelta(minutes=5)
 
 db = SQLAlchemy(app)
-
-# Секретный ключ для подписи токенов
-SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
-
 
 # Таблица пользователей
 class users(db.Model):
@@ -51,7 +46,7 @@ def create_token(username, exp_minutes, is_refresh=False):
         "jti": str(uuid.uuid4()),  # Уникальный идентификатор токена
         "type": "refresh" if is_refresh else "access"
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return jwt.encode(payload, app.secret_key, algorithm="HS256")
 
 
 @app.route("/")
@@ -86,7 +81,7 @@ def protected():
 
     token = auth_header.split(" ")[1]
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, app.secret_key, algorithms=["HS256"])
 
         # Проверка на повторное использование токена
         jti = payload["jti"]
@@ -112,7 +107,7 @@ def refresh():
     refresh_token = data.get("refresh_token")
 
     try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(refresh_token, app.secret_key, algorithms=["HS256"])
         if payload["type"] != "refresh":
             return jsonify({"error": "Invalid token type"}), 401
 
@@ -152,4 +147,3 @@ def view():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
