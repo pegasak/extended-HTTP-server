@@ -3,17 +3,22 @@ from datetime import timedelta, datetime
 from flask_sqlalchemy import SQLAlchemy
 import jwt
 import uuid
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = "hello"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'sqlite:///default.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.permanent_session_lifetime = timedelta(minutes=5)
 
 db = SQLAlchemy(app)
 
 # Секретный ключ для подписи токенов
-SECRET_KEY = "supersecurekey_that_is_at_least_256_bits_long_and_random"
+SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
 
 
 # Таблица пользователей
